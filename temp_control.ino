@@ -24,6 +24,7 @@ PID myPID(&temperature_read, &outputPWM, &set_temperature, kp, ki, kd, DIRECT);
 void setup() {
   Serial.begin(9600);
   Serial.println("PID Temperature Control with MAX6675");
+  Serial.println("Enter temperature setpoint in Celsius (e.g., 50.0):");
 
   pinMode(PWM_pin, OUTPUT);
 
@@ -37,6 +38,23 @@ void setup() {
 }
 
 void loop() {
+  // Check for Serial input to set temperature
+  if (Serial.available() > 0) {
+    String input = Serial.readStringUntil('\n');
+    input.trim(); // Remove whitespace
+    double new_setpoint = input.toDouble();
+    
+    // Validate input (ensure it's a reasonable temperature)
+    if (new_setpoint > 0 && new_setpoint < 1000) { // Adjust range as needed
+      set_temperature = new_setpoint;
+      Serial.print("New setpoint: ");
+      Serial.print(set_temperature);
+      Serial.println(" C");
+    } else {
+      Serial.println("Invalid setpoint! Enter a number between 0 and 1000.");
+    }
+  }
+
   temperature_read = thermocouple.readCelsius();
 
   if (isnan(temperature_read)) {
@@ -50,11 +68,10 @@ void loop() {
 
   ledcWrite(PWM_pin, (int)(outputPWM));
 
-  Serial.print("Setpoint: ");
   Serial.print(set_temperature);
-  Serial.print(" C, Current: ");
+  Serial.print(",");
   Serial.print(temperature_read);
-  Serial.print(" C, PID Output: ");
+  Serial.print(",");
   Serial.print(outputPWM);
   Serial.println();
 
